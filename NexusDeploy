@@ -63,46 +63,16 @@ direitos_setup() {
 }
 
 direitos_instalador() {
+    clear
     echo -e "$amarelo===================================================================================================\e[0m"
     echo -e "$amarelo=                                                                                                 =\e[0m"
-    echo -e "$amarelo=  $branco Este auto instalador foi desenvolvido para auxiliar na instalação das principais aplicações $amarelo  =\e[0m"
-    echo -e "$amarelo=  $branco  disponíveis no mercado open source. Já deixo todos os créditos aos desenvolvedores de cada $amarelo  =\e[0m"
-    echo -e "$amarelo=  $branco aplicação disponíveis aqui. Este Setup é licenciado sob a Licença MIT (MIT). Você pode usar, $amarelo =\e[0m"
-    echo -e "$amarelo=  $branco  copiar, modificar, integrar, publicar, distribuir e/ou vender cópias dos produtos finais,  $amarelo  =\e[0m"
-    echo -e "$amarelo=  $branco   mas deve sempre declarar que NexusDeploy (contato@nexusdeploy.art.br) é o autor original  $amarelo  =\e[0m"
-    echo -e "$amarelo=  $branco           destes códigos e atribuir um link para https://nexusdeploy.art.br/setup           $amarelo  =\e[0m"
+    echo -e "$amarelo=  $branco       NexusDeploy - Plataforma de Deploy e Orquestracao de Servicos DevOps             $amarelo=\e[0m"
+    echo -e "$amarelo=  $branco       Ambiente pronto para execucao e instalacao de ferramentas.                       $amarelo=\e[0m"
     echo -e "$amarelo=                                                                                                 =\e[0m"
     echo -e "$amarelo===================================================================================================\e[0m"
     echo ""
-    echo ""
-    read -p "Ao digitar Y você aceita e concorda com as orientações passadas acima (Y/N): " choice
-    while true; do
-        case $choice in
-            Y|y)
-                return
-                ;;
-            N|n)
-                clear
-                nome_finalizado
-                echo "Que pena que você não concorda, então estarei encerrando o instalador. Até mais."
-                sleep 2
-                clear
-                exit 1
-                ;;
-            *)
-                clear
-                erro_msg
-                echo ""
-                echo ""
-                echo "Por favor, digite apenas Y ou N."
-                sleep 2
-                clear
-                nome_instalador
-                direitos_setup
-                ;;
-        esac
-        read -p "Ao digitar Y você aceita e concorda com as orientações passadas acima (Y/N): " choice
-    done
+    sleep 1
+    return 0
 }
 
 ## Credenciais Portainerv2.5.0+
@@ -2791,7 +2761,6 @@ atualizar_arquivo() {
 telemetria() {
     # Telemetria externa desativada para privacidade e seguranca do NexusDeploy
     return 0
-}' > /dev/null 2>&1
 }
 
 ## // ## // ## // ## // ## // ## // ## // ## //## // ## // ## // ## // ## // ## // ## // ## // ##
@@ -3300,7 +3269,7 @@ pegar_user_senha_rabbitmq() {
         if [ -f /root/rabbitmq.yaml ]; then
             user_rabbit_mqs=$(grep "RABBITMQ_DEFAULT_USER" /root/rabbitmq.yaml | awk -F ': ' '{print $2}')
             senha_rabbit_mqs=$(grep "RABBITMQ_DEFAULT_PASS" /root/rabbitmq.yaml | awk -F ': ' '{print $2}')
-            url_rabbit_mqs=$(grep "traefik.http.routers.rabbitmq.rule" /root/rabbitmq.yaml | awk -F'[`]' '{print $2}')
+            url_rabbit_mqs=$(grep "traefik.http.routers.rabbitmq.rule" /root/rabbitmq.yaml | awk -F '\x60' '{print $2}')
             break
         else
             sleep 5
@@ -12937,9 +12906,10 @@ encryption_key_woofed=$(openssl rand -hex 32)
 
 # Verifica se o arquivo evolution.yaml existe
 if [ -f "/root/evolution_v1.yaml" ]; then
-    # Extrai os valores do arquivo evolution.yaml e formata no estilo desejado
-    EVOLUTION_API_ENDPOINT="- EVOLUTION_API_ENDPOINT=$(grep -oP '(?<=- SERVER_URL=)[^#]*' /root/evolution.yaml | sed 's/ //g')"
-    EVOLUTION_API_ENDPOINT_TOKEN="- EVOLUTION_API_ENDPOINT_TOKEN=$(grep -oP '(?<=- AUTHENTICATION_API_KEY=)[^#]*' /root/evolution.yaml | sed 's/ //g')"
+    VALOR_SERVER_URL=$(awk -F '- SERVER_URL=' '{print $2}' /root/evolution.yaml 2>/dev/null | cut -d'#' -f1 | tr -d ' ')
+    EVOLUTION_API_ENDPOINT="- EVOLUTION_API_ENDPOINT=$VALOR_SERVER_URL"
+    VALOR_AUTH_KEY=$(awk -F '- AUTHENTICATION_API_KEY=' '{print $2}' /root/evolution.yaml 2>/dev/null | cut -d'#' -f1 | tr -d ' ')
+    EVOLUTION_API_ENDPOINT_TOKEN="- EVOLUTION_API_ENDPOINT_TOKEN=$VALOR_AUTH_KEY"
 else
     # Define os valores padrão se o arquivo não existir
     EVOLUTION_API_ENDPOINT="#- EVOLUTION_API_ENDPOINT="
