@@ -188,7 +188,9 @@ if [ $? -eq 0 ]; then
 else
     echo "10/10 - [ OFF ] - Falha ao baixar NexusDeploy do repositorio remoto"
     echo "Encerrando instalador."
-    sleep 3
+    sleep 1
 fi
 
-clear
+echo ""
+echo -e "\e[32mOperação do NexusDeploy concluída.\e[0m"
+

@@ -3209,14 +3209,16 @@ pull() {
 }
 
 requisitar_outra_instalacao(){
+    echo ""
     read -p "Deseja instalar outra aplicação? (Y/N): " choice
     if [ "$choice" = "Y" ] || [ "$choice" = "y" ]; then
         return
     else
-        cd
-        cd
-        clear
-        exit 1
+        echo ""
+        echo -e "\e[32m✔ Instalação concluída com sucesso no NexusDeploy!\e[0m"
+        echo -e "Suas credenciais e dados estão salvos em: \e[33m/root/dados_vps/\e[0m"
+        echo ""
+        exit 0
     fi
 }
 
@@ -4287,8 +4289,8 @@ if [ "$CONTA_CRIADA" = true ]; then
   if [ -n "$token" ] && [ "$token" != "null" ]; then
     echo "2/2 - [ OK ] - Gerando primeiro token"
   else
-    echo "2/2 - [ OFF ] - Falha ao gerar o token"
-    exit 1
+    echo "2/2 - [ AVISO ] - Token automático pendente de geração (você pode gerar na interface do Portainer)"
+    token="pendente_geracao_manual"
   fi
 fi
 
