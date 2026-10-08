@@ -1,0 +1,194 @@
+#!/bin/bash
+
+## // ## // ## // ## // ## // ## // ## // ## //## // ## // ## // ## // ## // ## // ## // ## // ##
+##                                        NEXUS DEPLOY                                         ##
+## // ## // ## // ## // ## // ## // ## // ## //## // ## // ## // ## // ## // ## // ## // ## // ##
+
+## Cores
+amarelo="\e[33m"
+verde="\e[32m"
+branco="\e[97m"
+bege="\e[93m"
+vermelho="\e[91m"
+reset="\e[0m"
+
+nome_iniciando() {
+    clear
+    echo ""
+    echo -e "$amarelo===================================================================================================$reset"
+    echo -e "$amarelo=                                                                                                 $amarelo=$reset"
+    echo -e "$amarelo=                  $branco ███╗   ██╗███████╗██╗  ██╗██╗   ██╗███████╗                           $amarelo=$reset"
+    echo -e "$amarelo=                  $branco ████╗  ██║██╔════╝╚██╗██╔╝██║   ██║██╔════╝                           $amarelo=$reset"
+    echo -e "$amarelo=                  $branco ██╔██╗ ██║█████╗   ╚███╔╝ ██║   ██║███████╗                           $amarelo=$reset"
+    echo -e "$amarelo=                  $branco ██║╚██╗██║██╔══╝   ██╔██╗ ██║   ██║╚════██║                           $amarelo=$reset"
+    echo -e "$amarelo=                  $branco ██║ ╚████║███████╗██╔╝ ██╗╚██████╔╝███████║                           $amarelo=$reset"
+    echo -e "$amarelo=                  $branco ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝                           $amarelo=$reset"
+    echo -e "$amarelo=                                           NEXUS DEPLOY v. 3.0.0                         $amarelo=$reset"
+    echo -e "$amarelo===================================================================================================$reset"
+    echo ""
+    echo ""
+}
+
+nome_verificando() {
+    clear
+    echo ""
+    echo -e "$amarelo===================================================================================================$reset"
+    echo -e "$amarelo=                                                                                                 $amarelo=$reset"
+    echo -e "$amarelo=       $branco ██╗   ██╗███████╗██████╗ ██╗███████╗██╗ ██████╗ █████╗ ███╗   ██╗██████╗  ██████╗       $amarelo=$reset"
+    echo -e "$amarelo=       $branco ██║   ██║██╔════╝██╔══██╗██║██╔════╝██║██╔════╝██╔══██╗████╗  ██║██╔══██╗██╔═══██╗      $amarelo=$reset"
+    echo -e "$amarelo=       $branco ██║   ██║█████╗  ██████╔╝██║█████╗  ██║██║     ███████║██╔██╗ ██║██║  ██║██║   ██║      $amarelo=$reset"
+    echo -e "$amarelo=       $branco ╚██╗ ██╔╝██╔══╝  ██╔══██╗██║██╔══╝  ██║██║     ██╔══██║██║╚██╗██║██║  ██║██║   ██║      $amarelo=$reset"
+    echo -e "$amarelo=       $branco  ╚████╔╝ ███████╗██║  ██║██║██║     ██║╚██████╗██║  ██║██║ ╚████║██████╔╝╚██████╔╝      $amarelo=$reset"
+    echo -e "$amarelo=       $branco   ╚═══╝  ╚══════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝       $amarelo=$reset"
+    echo -e "$amarelo=                                                                                                 $amarelo=$reset"
+    echo -e "$amarelo===================================================================================================$reset"
+    echo ""
+    echo ""
+}
+
+clear
+nome_verificando
+echo "Preparando o ambiente para o NexusDeploy..."
+sleep 1
+
+# Verifica se o usuario e root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Este script precisa ser executado como root. Executando sudo su..."
+    sudo su
+fi
+
+# Verifica se o usuario esta no diretorio /root/
+if [ "$PWD" != "/root" ]; then
+    echo "Mudando para o diretorio /root/"
+    cd /root || exit
+fi
+
+nome_iniciando
+
+# Configuracao de Docker
+if ! command -v docker &> /dev/null; then
+    echo "1/10 - [ OFF ] - Docker nao esta instalado"
+    sleep 2
+else
+    ENV_VALUE=$(systemctl show --property=Environment docker 2>/dev/null | grep -o "DOCKER_MIN_API_VERSION=1.24" || true)
+
+    if [ "$ENV_VALUE" == "DOCKER_MIN_API_VERSION=1.24" ]; then
+        echo "1/10 - [ OK ] - Docker esta instalado e configurado corretamente"
+        sleep 2
+    else      
+        sudo mkdir -p /etc/systemd/system/docker.service.d >/dev/null 2>&1
+
+        sudo bash -c 'cat > /etc/systemd/system/docker.service.d/override.conf <<EOF
+[Service]
+Environment=DOCKER_MIN_API_VERSION=1.24
+EOF' >/dev/null 2>&1
+
+        sudo systemctl daemon-reexec >/dev/null 2>&1
+        sudo systemctl daemon-reload >/dev/null 2>&1
+        sudo systemctl restart docker >/dev/null 2>&1
+
+        sleep 2
+        echo "1/10 - [ OK ] - Docker configurado corretamente"
+    fi
+fi
+
+echo ""
+
+## Atualizacao de pacotes
+sudo apt update > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "2/10 - [ OK ] - Atualizando lista de pacotes (apt update)"
+else
+    echo "2/10 - [ OFF ] - Falha na atualizacao da lista de pacotes"
+fi
+
+echo ""
+
+## Instalando sudo
+apt install -y sudo > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "3/10 - [ OK ] - Verificando/Instalando sudo"
+else
+    echo "3/10 - [ OFF ] - Verificando/Instalando sudo"
+fi
+
+echo ""
+
+## Instalando apt-utils
+sudo apt-get install -y apt-utils > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "4/10 - [ OK ] - Verificando/Instalando apt-utils"
+else
+    echo "4/10 - [ OFF ] - Verificando/Instalando apt-utils"
+fi
+
+echo ""
+
+## Instalando dialog
+sudo apt-get install -y dialog > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "5/10 - [ OK ] - Verificando/Instalando dialog"
+else
+    echo "5/10 - [ OFF ] - Verificando/Instalando dialog"
+fi
+
+echo ""
+
+## Instalando jq
+sudo apt install -y jq > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "6/10 - [ OK ] - Verificando/Instalando jq"
+else
+    echo "6/10 - [ OFF ] - Verificando/Instalando jq"
+fi
+
+echo ""
+
+## Instalando apache2-utils
+sudo apt install -y apache2-utils > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "7/10 - [ OK ] - Verificando/Instalando apache2-utils"
+else
+    echo "7/10 - [ OFF ] - Verificando/Instalando apache2-utils"
+fi
+
+echo ""
+
+## Instalando git
+apt install -y git > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "8/10 - [ OK ] - Verificando/Instalando Git"
+else
+    echo "8/10 - [ OFF ] - Verificando/Instalando Git"
+fi
+
+echo ""
+
+## Instalando curl
+apt install -y curl > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "9/10 - [ OK ] - Verificando/Instalando curl"
+else
+    echo "9/10 - [ OFF ] - Verificando/Instalando curl"
+fi
+
+echo ""
+
+# Verifica se o arquivo NexusDeploy ja existe
+if [ -e "NexusDeploy" ]; then
+    rm -f NexusDeploy
+fi
+
+# Baixa o script principal do NexusDeploy
+curl -sSL https://raw.githubusercontent.com/rhuanpablobf/NexusDeploy/main/NexusDeploy -o NexusDeploy
+if [ $? -eq 0 ]; then
+    echo "10/10 - [ OK ] - Baixando NexusDeploy"
+    chmod +x NexusDeploy
+    ./NexusDeploy
+else
+    echo "10/10 - [ OFF ] - Falha ao baixar NexusDeploy do repositorio remoto"
+    echo "Encerrando instalador."
+    sleep 3
+fi
+
+clear
